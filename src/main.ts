@@ -7,7 +7,7 @@ import { Logger } from '@nestjs/common'
 
 const logger = new Logger('WalletInstance')
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule)
 
   const { emitter } = app.get(AppEventsService)
