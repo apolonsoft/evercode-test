@@ -6,6 +6,7 @@ import { AddressService } from './address.service'
 import { AccountsInput } from './inputs/accounts.input'
 import { AccountsConnection } from './types/accounts-connection.type'
 import { Blockchain } from './enums/blockchain.enum'
+import { EthereumBalance } from './types/ethereum-balance.type'
 
 @Injectable()
 export class AccountService {
@@ -79,4 +80,18 @@ export class AccountService {
             cursor: cursor,
         }
     }
+
+    async updateEthereumAccountBalancesAndSave(
+        account: AccountEntity,
+    ): Promise<AccountEntity> {
+        let balance: EthereumBalance = new EthereumBalance()
+        const addresses = await this.addressService.getAddressesByAccount(
+            account.id,
+        )
+        
+        account.totalBalance.ETHEREUM = balance
+        return this.accountRepository.save(account)
+    }
+
+    
 }
