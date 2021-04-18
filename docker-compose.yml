@@ -1,0 +1,29 @@
+version: "3.7"
+
+volumes:
+  psql-storage:
+  node_modules_storage:
+
+services:
+  app:
+    build: .
+    container_name: evercode-test
+    depends_on:
+      - psql
+    ports:
+      - "3003:3003"
+    volumes:
+      - .:/project
+      - node_modules_storage:/project/node_modules
+    env_file: .env
+    restart: always
+  psql:
+    image: postgres:12
+    volumes:
+      - psql-storage:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: dbname
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
