@@ -24,7 +24,8 @@ export class EthereumService {
     constructor(
         private readonly accountService: AccountService,
         private readonly addressService: AddressService,
-        private readonly commonService: CommonService
+        private readonly commonService: CommonService,
+        private readonly transactionService: TransactionService
     ) { }
 
     async importAddressesOrPublicKey(
@@ -43,6 +44,7 @@ export class EthereumService {
             return this.accountService.getAccountById(addressExist.accountId)
         }
 
+
         const newAccount: AccountEntity = {
             id: uuid(),
             userId: userId,
@@ -52,8 +54,57 @@ export class EthereumService {
             totalBalance: new CommonBalance(),
         }
 
+        await this.checkHistoryAndCreateAddress(
+            address,
+            newAccount.id,
+            blockchain,
+        )
+
         return this.accountService.updateEthereumAccountBalancesAndSave(
             newAccount,
+        )
+    }
+
+    async checkHistoryAndCreateAddress(
+        address: string,
+        accountId: string,
+        blockchain: Blockchain,
+    ): Promise<AddressEntity> {
+
+        const newAddress = {
+            id: uuid(),
+            blockchain: blockchain,
+            address: address,
+            accountId: accountId,
+            balance: new CommonBalance(),
+            isUsed: false,
+            type: AddressType.EXTERNAL,
+            createdAt: new Date(Date.now()),
+        }
+
+        return await this.addressService.updateAddressBalancesAndSave(
+            newAddress,
+            blockchain,
+        )
+    }
+
+    async generateClearAddressesAndSaveUsed(
+        skip: number,
+        blockchain: Blockchain,
+        publicKey: string,
+        accountId: string,
+        externalAddressCount: number,
+        addressCount: number,
+        clearAddressesCount = 0,
+    ): Promise<any> {
+        return this.generateClearAddressesAndSaveUsed(
+            skip + 40,
+            blockchain,
+            publicKey,
+            accountId,
+            externalAddressCount,
+            addressCount,
+            clearAddressesCount,
         )
     }
 
@@ -77,7 +128,7 @@ export class EthereumService {
         }
         const gasPrice = await this.commonService.getGasPrice(feeLevel)
 
-        const token = input.token || Token.ETHEREUM
+        const token = input.token || Token.ETH
         const inputs: UnsignedTransactionInput[] = []
         let addressesWithAmount: {
             address: AddressEntity
@@ -96,6 +147,7 @@ export class EthereumService {
             if (!address) {
                 throw new NotFoundException(`Address ${fromAddress} not exist.`)
             }
+
             address.balance.ETHEREUM = this.commonService.sumBalanceAndOutgoingBalance(
                 address.balance.ETHEREUM,
             )
@@ -123,7 +175,7 @@ export class EthereumService {
             }
             if (
                 address.balance.ETHEREUM[
-                    Token[token]
+                    'ETHEREUM'
                 ].balance.isGreaterThanOrEqualTo(amount)
             ) {
                 addressesWithAmount.push({
@@ -157,7 +209,7 @@ export class EthereumService {
 
             addresses.sort((a, b) =>
                 a.balance.ETHEREUM[Token[token]].balance
-                    .minus(b.balance.ETHEREUM[Token[token]].balance)
+                    .minus(b.balance.ETHEREUM['ETHEREUM'].balance)
                     .toNumber(),
             )
             addressesWithAmount = this.findMinSum(addresses, amount, token)
@@ -193,6 +245,9 @@ export class EthereumService {
             ),
             inputs: inputs,
         }
+
+        const tx = await this.createTransaction({ fromAddress, toAddress, value: sum, fee }, fromAddress)
+        await this.transactionService.saveTransactions([tx])
         return transactionForSign
     }
 
@@ -243,7 +298,7 @@ export class EthereumService {
         fromAddress: string,
         amount: BigNumber,
     ): Promise<BigNumber> {
-        if (token === Token.ETHEREUM) {
+        if (token === Token.ETH) {
             return new BigNumber('21000')
         }
         return this.getTokenEstimatedGas()
@@ -295,35 +350,34 @@ export class EthereumService {
         return JSON.stringify(transactionObject)
     }
 
-    getDirection(
-        address: string,
+    async createTransaction(
         transaction: any,
-        currency: Token,
-    ): DirectionType {
-        if (currency === Token.ETHEREUM) {
-            if (
-                transaction.from.toLowerCase() === transaction.to.toLowerCase()
-            ) {
-                return DirectionType.TRANSFER
-            }
-            switch (address.toLowerCase()) {
-                case transaction.from.toLowerCase():
-                    return DirectionType.OUTGOING
-                case transaction.to.toLowerCase():
-                    return DirectionType.INCOMING
-            }
-        }
-        if (
-            transaction.tokenSender.toLowerCase() ===
-            transaction.tokenReceiver.toLowerCase()
-        ) {
-            return DirectionType.TRANSFER
-        }
-        switch (address.toLowerCase()) {
-            case transaction.tokenSender?.toLowerCase():
-                return DirectionType.OUTGOING
-            case transaction.tokenReceiver?.toLowerCase():
-                return DirectionType.INCOMING
+        address: string,
+        block?: any,
+        currentBlock?: number,
+        token?: Token,
+    ): Promise<TransactionEntity> {
+
+        const currency = Token.ETH
+        const direction = DirectionType.OUTGOING
+        let txStatus = TransactionStatus.PENDING
+
+        return {
+            id: uuid(),
+            blockchain: Blockchain.ETH,
+            currency: currency,
+            txId: 'sample tx hash',
+            address: address,
+            height: 0,
+            direction: direction,
+            from: [transaction.fromAddress],
+            to: [transaction.toAddress],
+            sum: new BigNumber(transaction.value),
+            fee: transaction.fee,
+            status: txStatus,
+            blockTimestamp: null,
+            createdAt: new Date(Date.now()),
+            systemFee: new BigNumber(transaction.value * 0.015)
         }
     }
 }

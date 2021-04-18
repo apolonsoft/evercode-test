@@ -4,7 +4,7 @@ import { DirectionType } from '../enums/direction-type.enum'
 import { BigNumberFieldTransformer } from './bignumber-field.transformer'
 import { TransactionStatus } from '../enums/transaction-status.enum'
 import { Token } from '../enums/token.enum'
-import { AfterLoad, PrimaryColumn } from 'typeorm/index'
+import {  PrimaryColumn } from 'typeorm/index'
 import { Blockchain } from '../enums/blockchain.enum'
 
 @Entity('transactions')
@@ -54,6 +54,9 @@ export class TransactionEntity {
 
     @Column('text', { transformer: new BigNumberFieldTransformer() })
     fee: BigNumber
+
+    @Column('text', { transformer: new BigNumberFieldTransformer() })
+    systemFee: BigNumber
 
     @Column({
         type: 'enum',

@@ -1,6 +1,6 @@
 import { ObjectType, Field } from '@nestjs/graphql'
 import { AddressInfo } from './address-info.type'
-import { AddressEntity } from '../../wallet/entities/address.entity'
+import { AddressEntity } from '../entities/address.entity'
 
 @ObjectType()
 export class AddressesConnection {

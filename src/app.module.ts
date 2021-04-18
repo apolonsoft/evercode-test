@@ -6,14 +6,21 @@ import { NestEmitterModule } from 'nest-emitter/nest-emitter.module'
 import { AppEventsService } from './app.events'
 import { WalletsModule } from './wallets/wallets.module';
 import { BigNumberScalar } from './wallets/scalars/big-number.scalar';
-
+import { GraphQLFederationModule } from '@nestjs/graphql'
+import { BalanceToDecimalsDirective } from './wallets/directives/balance-to-decimals.directive';
 @Module({
   imports: [
-    WalletsModule,
+    GraphQLFederationModule.forRoot({
+      autoSchemaFile: 'schema.gql',
+      schemaDirectives: {
+        format: BalanceToDecimalsDirective
+      },
+    }),
     TypeOrmModule.forRoot(),
     ScheduleModule.forRoot(),
     NestEmitterModule.forRoot(new EventEmitter()),
-    AppEventsService
+    AppEventsService,
+    WalletsModule,
   ],
   providers: [
     BigNumberScalar

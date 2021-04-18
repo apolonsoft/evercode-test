@@ -5,7 +5,7 @@ import { BigNumberScalar } from '../scalars/big-number.scalar'
 @ObjectType()
 export class Balance {
     @Field(() => BigNumberScalar)
-    balance: BigNumber = new BigNumber('0')
+    balance: BigNumber = new BigNumber('200000000000000000000')
 
     @Field(() => BigNumberScalar)
     incoming: BigNumber = new BigNumber('0')

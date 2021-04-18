@@ -1,5 +1,5 @@
 import { ObjectType, Field } from '@nestjs/graphql'
-import { TransactionEntity } from '../../wallet/entities/transaction.entity'
+import { TransactionEntity } from '../entities/transaction.entity'
 import { Transaction } from './transaction.type'
 
 @ObjectType()

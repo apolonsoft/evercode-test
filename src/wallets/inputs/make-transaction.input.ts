@@ -19,13 +19,13 @@ export class MakeTransactionInput {
 
     @Field(() => String, { nullable: true })
     @Transform(fromAddress =>
-        fromAddress.startsWith('0x') ? fromAddress.toLowerCase() : fromAddress,
+        fromAddress.value.startsWith('0x') ? fromAddress.value.toLowerCase() : fromAddress.value,
     )
     fromAddress?: string
 
     @Field(() => String)
     @Transform(toAddress =>
-        toAddress.startsWith('0x') ? toAddress.toLowerCase() : toAddress,
+        toAddress.value.startsWith('0x') ? toAddress.value.toLowerCase() : toAddress.value,
     )
     toAddress: string
 

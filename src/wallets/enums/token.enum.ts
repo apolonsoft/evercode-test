@@ -1,7 +1,7 @@
 import { registerEnumType } from '@nestjs/graphql'
 
 export enum Token {
-    ETHEREUM = 'ETHEREUM'
+    ETH = 'ETH'
 }
 
 registerEnumType(Token, { name: 'Token' })

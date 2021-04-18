@@ -1,5 +1,5 @@
 import { InputType, Field } from '@nestjs/graphql'
-import { Transform } from 'class-transformer'
+import { Transform, TransformFnParams } from 'class-transformer'
 import { Blockchain } from '../enums/blockchain.enum'
 
 @InputType()
@@ -11,8 +11,8 @@ export class ImportAddressOrPublicKeyInput {
     blockchain: Blockchain
 
     @Field(() => String, { nullable: true })
-    @Transform((address: string) =>
-        address.startsWith('0x') ? address.toLowerCase() : address,
+    @Transform((address: TransformFnParams) =>
+        address.value.startsWith('0x') ? address.value.toLowerCase() : address.value,
     )
     address?: string
 

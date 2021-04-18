@@ -6,6 +6,11 @@ import { AddressEntity } from './entities/address.entity'
 import { TransactionService } from './transaction.service'
 import { AddressType } from './enums/address-type.enum'
 import { AddressesConnection } from './types/addresses-connection.type'
+import { EthereumBalance } from './types/ethereum-balance.type'
+import { TransactionStatus } from './enums/transaction-status.enum'
+import { CommonService } from './common.service'
+import { Token } from './enums/token.enum'
+import { DirectionType } from './enums/direction-type.enum'
 
 @Injectable()
 export class AddressService {
@@ -13,6 +18,7 @@ export class AddressService {
         @InjectRepository(AddressEntity)
         private readonly addressRepository: Repository<AddressEntity>,
         private readonly transactionService: TransactionService,
+        private readonly commonService: CommonService
     ) {}
 
     async getAddress(
@@ -105,5 +111,66 @@ export class AddressService {
         }
     }
 
+    async updateAddressBalancesAndSave(
+        addressEntity: AddressEntity,
+        blockchain: Blockchain,
+    ): Promise<AddressEntity> {
+        const balance: EthereumBalance = new EthereumBalance()
+
+        const transactions = await this.transactionService.getTransactionsByAddresses(
+            [addressEntity.address],
+            blockchain,
+        )
+
+        for (const transaction of transactions) {
+            if (transaction.status === TransactionStatus.CONFIRMED) {
+                balance[Token[transaction.currency]].balance = balance[
+                    Token[transaction.currency]
+                ].balance.plus(
+                    this.commonService.calculateBalanceDif(transaction),
+                )
+                balance.ETHEREUM.balance = balance.ETHEREUM.balance.minus(
+                    transaction.fee,
+                )
+            } else if (transaction.status === TransactionStatus.FAILED) {
+                balance.ETHEREUM.balance = balance.ETHEREUM.balance.minus(
+                    transaction.fee,
+                )
+            } else {
+                switch (transaction.direction) {
+                    case DirectionType.INCOMING: {
+                        balance[Token[transaction.currency]].incoming = balance[
+                            Token[transaction.currency]
+                        ].incoming.plus(transaction.sum)
+                        break
+                    }
+
+                    case DirectionType.OUTGOING: {
+                        balance[Token[transaction.currency]].outgoing = balance[
+                            Token[transaction.currency]
+                        ].outgoing.minus(transaction.sum)
+                        balance.ETHEREUM.outgoing = balance.ETHEREUM.outgoing.minus(
+                            transaction.fee,
+                        )
+                        break
+                    }
+
+                    default: {
+                        balance[Token[transaction.currency]].outgoing = balance[
+                            Token[transaction.currency]
+                        ].outgoing.minus(transaction.sum)
+                        balance[Token[transaction.currency]].incoming = balance[
+                            Token[transaction.currency]
+                        ].incoming.plus(transaction.sum)
+                        balance.ETHEREUM.outgoing = balance.ETHEREUM.outgoing.minus(
+                            transaction.fee,
+                        )
+                    }
+                }
+            }
+        }
+        addressEntity.balance.ETHEREUM = balance
+        return this.addressRepository.save(addressEntity)
+    }
    
 }
