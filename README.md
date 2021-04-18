@@ -1,6 +1,6 @@
 ## Description
 
-[Evercode Test]
+Evercode Test ETH Wallet
 
 ## Installation
 
